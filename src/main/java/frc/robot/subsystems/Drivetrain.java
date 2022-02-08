@@ -4,16 +4,22 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.sensors.RomiGyro;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.RobotController;
 
 public class Drivetrain extends SubsystemBase {
   private static final double kCountsPerRevolution = 1440.0;
-  private static final double kWheelDiameterInch = 2.75591; // 70 mm
+  //private static final double kWheelDiameterInch = 2.75591; // 70 mm
+  private static final double kWheelDiameterMeters = 0.070; // 2.75591 inches
 
   // The Romi has the left and right motors set to
   // PWM channels 0 and 1 respectively
@@ -31,6 +37,11 @@ public class Drivetrain extends SubsystemBase {
   // Set up the RomiGyro
   private final RomiGyro m_gyro = new RomiGyro();
 
+  // Odometry
+
+  private final DifferentialDriveOdometry m_odometry = new DifferentialDriveOdometry(new Rotation2d(m_gyro.getAngleZ()), new Pose2d(0, 0, new Rotation2d()));
+  //private final Field2d m_field;
+
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
 
@@ -41,14 +52,28 @@ public class Drivetrain extends SubsystemBase {
     // gearbox is constructed, you might have to invert the left side instead.
     m_rightMotor.setInverted(true);
 
-    // Use inches as unit for encoder distances
-    m_leftEncoder.setDistancePerPulse((Math.PI * kWheelDiameterInch) / kCountsPerRevolution);
-    m_rightEncoder.setDistancePerPulse((Math.PI * kWheelDiameterInch) / kCountsPerRevolution);
+    // Use Meters as unit for encoder distances
+    m_leftEncoder.setDistancePerPulse((Math.PI * kWheelDiameterMeters) / kCountsPerRevolution);
+    m_rightEncoder.setDistancePerPulse((Math.PI * kWheelDiameterMeters) / kCountsPerRevolution);
     resetEncoders();
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate) {
     m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate);
+  }
+
+  public void tankDrive(double left, double right) {
+    m_diffDrive.tankDrive(left, right, false);
+  }
+
+  public void tankDriveVolts(double leftVolts, double rightVolts) {
+
+    /*
+    m_leftMotors[0].setVoltage(Math.min(leftVolts, 2));
+    m_rightMotors[0].setVoltage(-Math.min(rightVolts, 2));
+    */
+    double voltage = RobotController.getBatteryVoltage();
+    m_diffDrive.tankDrive(Math.min(leftVolts/voltage, 1.0), Math.min(rightVolts/voltage, 1.0), false);
   }
 
   public void resetEncoders() {
@@ -64,16 +89,54 @@ public class Drivetrain extends SubsystemBase {
     return m_rightEncoder.get();
   }
 
-  public double getLeftDistanceInch() {
+  public double getLeftEncoderMeters() {
     return m_leftEncoder.getDistance();
   }
 
-  public double getRightDistanceInch() {
+
+  public double getRightEncoderMeters() {
     return m_rightEncoder.getDistance();
   }
 
-  public double getAverageDistanceInch() {
-    return (getLeftDistanceInch() + getRightDistanceInch()) / 2.0;
+  public double getAverageEncoderMeters() {
+    return (getLeftEncoderMeters() + getRightEncoderMeters()) / 2.0;
+  }
+
+  public double getLeftEncoderMetersPerSec() {
+    return m_leftEncoder.getRate();
+  }
+    
+  public double getRightEncoderMetersPerSec() {
+    // TODO Note sure if this should be negated
+    return -m_rightEncoder.getRate();
+  }
+
+  public double getLeftEncoderInches() {
+    double meters = m_leftEncoder.getDistance();
+    double inches = Units.metersToInches(meters);
+    return inches;
+  }
+
+  public double getRightEncoderInches() {
+    double meters = m_rightEncoder.getDistance();
+    double inches = Units.metersToInches(meters);
+    return inches;
+  }
+
+  public double getAverageEncoderInches() {
+    return (getLeftEncoderInches() + getRightEncoderInches()) / 2.0;
+  }
+
+  public void setDeadband(double deadband) {
+    m_diffDrive.setDeadband(deadband);
+    return;
+  }
+
+  public double getAngularPositionInRadians() {
+    // Note that the angle from the gyro must be negated because 
+    // getAngle returns a clockwise positive
+    double angularPositionRadians = -Math.toRadians(-m_gyro.getAngleZ());
+    return angularPositionRadians;
   }
 
   /**
@@ -133,6 +196,13 @@ public class Drivetrain extends SubsystemBase {
   /** Reset the gyro. */
   public void resetGyro() {
     m_gyro.reset();
+  }
+
+  public void resetOdometryToCurrentPose() {
+    Pose2d currentPose = m_odometry.getPoseMeters();
+    resetEncoders();
+    m_odometry.resetPosition(currentPose, new Rotation2d(m_gyro.getAngleZ()));
+    //if (Robot.isSimulation()) m_dts.setPose(pose);
   }
 
   @Override
