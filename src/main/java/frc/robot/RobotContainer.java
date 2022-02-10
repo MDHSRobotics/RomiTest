@@ -92,6 +92,13 @@ public class RobotContainer {
     return m_chooser.getSelected();
   }
 
+  private double getRotationInput(Joystick controller) {
+    // Left trigger (2) rotates counter-clockwise; right trigger (3) rotates clockwise
+    // If both are depressed, use the difference
+    double rotation = controller.getRawAxis(3) - controller.getRawAxis(2);
+    return rotation;
+  }
+
   /**
    * Use this to pass the teleop command to the main {@link Robot} class.
    *
@@ -99,6 +106,6 @@ public class RobotContainer {
    */
   public Command getArcadeDriveCommand() {
     return new ArcadeDrive(
-        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> m_controller.getRawAxis(2));
+        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> getRotationInput(m_controller));
   }
 }
