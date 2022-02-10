@@ -15,6 +15,7 @@ import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.RobotController;
+import frc.robot.Constants.DriveConstants;
 
 public class Drivetrain extends SubsystemBase {
   private static final double kCountsPerRevolution = 1440.0;
@@ -137,6 +138,15 @@ public class Drivetrain extends SubsystemBase {
     // getAngle returns a clockwise positive
     double angularPositionRadians = -Math.toRadians(-m_gyro.getAngleZ());
     return angularPositionRadians;
+  }
+
+    /**
+   * Returns the heading of the robot.
+   *
+   * @return the robot's heading in degrees, from 180 to 180
+   */
+  public double getHeading() {
+    return Math.IEEEremainder(m_gyro.getAngleZ(), 360) * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
   }
 
   /**
