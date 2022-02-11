@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.Constants.DriveConstants;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Drivetrain extends SubsystemBase {
   private static final double kCountsPerRevolution = 1440.0;
@@ -203,20 +204,33 @@ public class Drivetrain extends SubsystemBase {
     return m_gyro.getAngleZ();
   }
 
+  /* Get Pose in meters*/
+  public Pose2d getPose() {
+    return m_odometry.getPoseMeters();
+  }
+
   /** Reset the gyro. */
   public void resetGyro() {
     m_gyro.reset();
   }
 
   public void resetOdometryToCurrentPose() {
-    Pose2d currentPose = m_odometry.getPoseMeters();
+    Pose2d currentPose = getPose();
     resetEncoders();
     m_odometry.resetPosition(currentPose, new Rotation2d(m_gyro.getAngleZ()));
     //if (Robot.isSimulation()) m_dts.setPose(pose);
   }
 
+
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
+      m_odometry.update(new Rotation2d(m_gyro.getAngleZ()), getLeftEncoderMeters(), getRightEncoderMeters());
+
+      SmartDashboard.putNumber("Robot Heading", getHeading());
+      SmartDashboard.putString("Robot Location", getPose().getTranslation().toString());
+  }
+
+  public DifferentialDrive getDifferentialDrive() {
+    return m_diffDrive;
   }
 }
