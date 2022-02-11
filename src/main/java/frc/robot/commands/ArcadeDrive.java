@@ -7,11 +7,15 @@ package frc.robot.commands;
 import frc.robot.subsystems.Drivetrain;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import java.util.function.Supplier;
+import edu.wpi.first.math.filter.SlewRateLimiter;
+import frc.robot.Constants;
 
 public class ArcadeDrive extends CommandBase {
   private final Drivetrain m_drivetrain;
   private final Supplier<Double> m_xaxisSpeedSupplier;
   private final Supplier<Double> m_zaxisRotateSupplier;
+  private final SlewRateLimiter turningLimiter;
+  private final SlewRateLimiter drivingLimiter;
 
   /**
    * Creates a new ArcadeDrive. This command will drive your robot according to the speed supplier
@@ -26,8 +30,11 @@ public class ArcadeDrive extends CommandBase {
       Supplier<Double> xaxisSpeedSupplier,
       Supplier<Double> zaxisRotateSupplier) {
     m_drivetrain = drivetrain;
+    drivingLimiter = new SlewRateLimiter(Constants.DriveConstants.kTeleDriveMaxAccelerationUnitsPerSecond);
+    turningLimiter = new SlewRateLimiter(Constants.DriveConstants.kTeleDriveMaxAngularAccelerationUnitsPerSecond);
     m_xaxisSpeedSupplier = xaxisSpeedSupplier;
     m_zaxisRotateSupplier = zaxisRotateSupplier;
+
     addRequirements(drivetrain);
   }
 
@@ -38,7 +45,9 @@ public class ArcadeDrive extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_drivetrain.arcadeDrive(m_xaxisSpeedSupplier.get(), m_zaxisRotateSupplier.get());
+    double drivingSpeed = drivingLimiter.calculate(m_xaxisSpeedSupplier.get());
+    double turningSpeed = turningLimiter.calculate(m_zaxisRotateSupplier.get());
+    m_drivetrain.arcadeDrive(drivingSpeed, turningSpeed);
   }
 
   // Called once the command ends or is interrupted.

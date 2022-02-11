@@ -25,6 +25,9 @@ public final class Constants {
         public static final double kTurnToleranceDeg = 5;
         public static final double kTurnRateToleranceDegPerS = 10; // degrees per second
 
+        public static final double kTeleDriveMaxAccelerationUnitsPerSecond = 3;
+        public static final double kTeleDriveMaxAngularAccelerationUnitsPerSecond = 3;
+
         /* Unused
         public static final int kLeftMotor1Port = 0;
         public static final int kLeftMotor2Port = 1;
